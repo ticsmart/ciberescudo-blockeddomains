@@ -1,0 +1,1 @@
+# escudodigital-blockeddomains
