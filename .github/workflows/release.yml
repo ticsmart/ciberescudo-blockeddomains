@@ -5,16 +5,22 @@
 # pero sí las de los assets de un release (download_count). Publicando el binario
 # también por esta vía podemos medir cuántas descargas recibe cada versión.
 #
-# De momento SOLO se dispara a mano, mientras se validan los permisos del
-# GITHUB_TOKEN. El disparo automático por push de domains_cleans.bin se añadirá
-# cuando deploy.sh publique también el número de lista junto al binario.
+# Se dispara al llegar un binario nuevo. deploy.sh empuja en ese primer commit el
+# .bin JUNTO a un version.json coherente con él (url al fichero raw), así que la
+# versión que se lee aquí es siempre la del binario recién publicado. Después,
+# deploy.sh espera a que este release exista y sólo entonces reescribe la url del
+# version.json en un segundo commit — que ya no toca el .bin y por tanto no vuelve
+# a disparar este workflow.
 #
-# Mientras version.json siga apuntando al fichero raw, crear releases NO altera
-# el comportamiento de ninguna app: nadie los consume todavía.
+# El disparo manual se mantiene para republicar un release concreto a mano.
 # ==============================================================================
 name: Publicar release de la blacklist
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - domains_cleans.bin
   workflow_dispatch:
     inputs:
       version:
