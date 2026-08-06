@@ -97,6 +97,10 @@ jobs:
       - name: Crear el release y adjuntar el binario
         env:
           GH_TOKEN: ${{ github.token }}
+          # Sin checkout no hay .git del que `gh` pueda deducir el repositorio,
+          # así que hay que decírselo. Y el tag se ancla al commit exacto que
+          # disparó el workflow, no a donde esté la rama en ese momento.
+          GH_REPO: ${{ github.repository }}
           TAG: v${{ steps.v.outputs.version }}
         run: |
           set -euo pipefail
@@ -107,6 +111,7 @@ jobs:
             gh release upload "$TAG" domains_cleans.bin --clobber
           else
             gh release create "$TAG" domains_cleans.bin \
+              --target "$GITHUB_SHA" \
               --title "Blacklist $TAG" \
               --notes "Lista de dominios bloqueados, versión $TAG.
 
