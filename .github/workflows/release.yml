@@ -1,0 +1,83 @@
+# ==============================================================================
+# release.yml — Publica domains_cleans.bin como asset de un release
+# ==============================================================================
+# Motivo: GitHub NO contabiliza las descargas de ficheros raw del repositorio,
+# pero sí las de los assets de un release (download_count). Publicando el binario
+# también por esta vía podemos medir cuántas descargas recibe cada versión.
+#
+# De momento SOLO se dispara a mano, mientras se validan los permisos del
+# GITHUB_TOKEN. El disparo automático por push de domains_cleans.bin se añadirá
+# cuando deploy.sh publique también el número de lista junto al binario.
+#
+# Mientras version.json siga apuntando al fichero raw, crear releases NO altera
+# el comportamiento de ninguna app: nadie los consume todavía.
+# ==============================================================================
+name: Publicar release de la blacklist
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Número de lista a publicar (vacío = el de version.json)"
+        required: false
+        type: string
+
+# Único permiso necesario: crear el release y subirle el binario.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Determinar la versión de la lista
+        id: v
+        env:
+          # Vía entorno y no interpolado en el script: un ${{ }} dentro de `run`
+          # es una vía de inyección de comandos.
+          VERSION_INPUT: ${{ github.event.inputs.version }}
+        run: |
+          set -euo pipefail
+          VERSION="$VERSION_INPUT"
+          if [ -z "$VERSION" ]; then
+            VERSION="$(python3 -c 'import json; print(json.load(open("version.json"))["version"])')"
+          fi
+          case "$VERSION" in
+            ''|*[!0-9]*) echo "Versión no numérica: '$VERSION'" >&2; exit 1 ;;
+          esac
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versión de la lista: $VERSION"
+
+      - name: Comprobar el binario antes de publicarlo
+        run: |
+          set -euo pipefail
+          test -f domains_cleans.bin || { echo "Falta domains_cleans.bin" >&2; exit 1; }
+          # Cabecera BDH1: magic(4) + timestamp(8) + recuento(4). Si el magic no
+          # cuadra, el fichero no es una blacklist válida y no debe publicarse.
+          MAGIC="$(head -c 4 domains_cleans.bin)"
+          [ "$MAGIC" = "BDH1" ] || { echo "Cabecera inesperada: '$MAGIC'" >&2; exit 1; }
+          ls -l domains_cleans.bin
+
+      - name: Crear el release y adjuntar el binario
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # Sustituir el asset REINICIA su contador de descargas: sólo debería
+            # ocurrir al repetir una ejecución, nunca en una publicación normal.
+            echo "El release $TAG ya existe — se sustituye el binario."
+            gh release upload "$TAG" domains_cleans.bin --clobber
+          else
+            gh release create "$TAG" domains_cleans.bin \
+              --title "Blacklist $TAG" \
+              --notes "Lista de dominios bloqueados, versión $TAG.
+
+          El binario va firmado con Ed25519; la firma (signedHash) viaja en version.json
+          y las aplicaciones la verifican antes de instalar la lista."
+          fi
+          gh release view "$TAG"
