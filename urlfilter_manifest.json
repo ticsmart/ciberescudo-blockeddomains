@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "tag": "100cf3904130c7adc5244124080b1f2454588aff7375070ae027fda73bbafc81",
+  "domainCount": 10,
+  "bitCount": 96,
+  "hashCount": 7,
+  "murmurSeed": 0,
+  "url": "https://raw.githubusercontent.com/ticsmart/ciberescudo-blockeddomains/urlfilter-spike/urlfilter_prefilter.bloom",
+  "signedHash": "OWJUNqDoW4TKH7VcQhvqf1Su6BfLjAdmC6hthwQgcQTzOtrOJ11WYHq4ZyqS1w4S8UeZHo1o35Msn7h4dNeEAQ=="
+}
