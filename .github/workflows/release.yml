@@ -12,6 +12,13 @@
 # version.json en un segundo commit — que ya no toca el .bin y por tanto no vuelve
 # a disparar este workflow.
 #
+# Desde la Fase 2 del filtro de URLs de iOS, el release lleva también el
+# prefiltro (urlfilter_prefilter.bloom) y su versión con contadores
+# (urlfilter_prefilter.counts) de la misma versión de la lista. Los genera y
+# verifica el generador en la misma pasada que el BIN; aquí sólo se comprueba
+# que son de esta versión y que no llegan truncados. Si no cuadran, el release
+# sale con el BIN solo: el filtro de URLs nunca frena la lista principal.
+#
 # El disparo manual se mantiene para republicar un release concreto a mano.
 # ==============================================================================
 name: Publicar release de la blacklist
@@ -21,6 +28,8 @@ on:
     branches: [main]
     paths:
       - domains_cleans.bin
+      - urlfilter_prefilter.bloom
+      - urlfilter_prefilter.counts
   workflow_dispatch:
     inputs:
       version:
@@ -55,6 +64,13 @@ jobs:
               "repos/$GITHUB_REPOSITORY/contents/$f?ref=$GITHUB_SHA" > "$f"
           done
           ls -l version.json domains_cleans.bin
+          # El filtro de URLs puede no venir (versiones antiguas, o su puerta de
+          # publicación falló en el generador): no es un error.
+          for f in urlfilter_manifest.json urlfilter_prefilter.bloom urlfilter_prefilter.counts; do
+            gh api -H "Accept: application/vnd.github.raw" \
+              "repos/$GITHUB_REPOSITORY/contents/$f?ref=$GITHUB_SHA" > "$f" 2>/dev/null \
+              || { rm -f "$f"; echo "Sin $f en este commit"; }
+          done
 
       - name: Determinar la versión de la lista
         id: v
@@ -94,6 +110,44 @@ jobs:
           echo "dominios=$COUNT tamano=$REAL esperado=$ESPERADO"
           [ "$REAL" = "$ESPERADO" ] || { echo "Binario truncado o corrupto: no se publica" >&2; exit 1; }
 
+      - name: Comprobar el filtro de URLs
+        id: uf
+        env:
+          VERSION: ${{ steps.v.outputs.version }}
+        run: |
+          set -euo pipefail
+          ASSETS=""
+          if [ -f urlfilter_manifest.json ] && [ -f urlfilter_prefilter.bloom ] && [ -f urlfilter_prefilter.counts ]; then
+            # Misma versión que el BIN, tag = SHA-256 del .bloom y tamaños
+            # exactos para bitCount (un bit por posición; un nibble en .counts).
+            if python3 - <<'PY'
+          import hashlib, json, os, sys
+          m = json.load(open("urlfilter_manifest.json"))
+          bloom = open("urlfilter_prefilter.bloom", "rb").read()
+          counts = os.path.getsize("urlfilter_prefilter.counts")
+          bits = m["bitCount"]
+          fallos = []
+          if str(m["version"]) != os.environ["VERSION"]:
+              fallos.append(f"version {m['version']} != {os.environ['VERSION']}")
+          if hashlib.sha256(bloom).hexdigest() != m["tag"]:
+              fallos.append("tag != sha256 del .bloom")
+          if len(bloom) != (bits + 7) // 8:
+              fallos.append(f".bloom de {len(bloom)} bytes para {bits} bits")
+          if counts != (bits + 1) // 2:
+              fallos.append(f".counts de {counts} bytes para {bits} bits")
+          print("; ".join(fallos) or "filtro de URLs coherente con la versión")
+          sys.exit(1 if fallos else 0)
+          PY
+            then
+              ASSETS="urlfilter_prefilter.bloom urlfilter_prefilter.counts"
+            else
+              echo "::warning::El filtro de URLs no cuadra con la versión $VERSION: el release sale sin él"
+            fi
+          else
+            echo "Este commit no trae el filtro de URLs completo: el release sale con el BIN solo"
+          fi
+          echo "assets=$ASSETS" >> "$GITHUB_OUTPUT"
+
       - name: Crear el release y adjuntar el binario
         env:
           GH_TOKEN: ${{ github.token }}
@@ -102,15 +156,16 @@ jobs:
           # disparó el workflow, no a donde esté la rama en ese momento.
           GH_REPO: ${{ github.repository }}
           TAG: v${{ steps.v.outputs.version }}
+          UF_ASSETS: ${{ steps.uf.outputs.assets }}
         run: |
           set -euo pipefail
           if gh release view "$TAG" >/dev/null 2>&1; then
             # Sustituir el asset REINICIA su contador de descargas: sólo debería
             # ocurrir al repetir una ejecución, nunca en una publicación normal.
             echo "El release $TAG ya existe — se sustituye el binario."
-            gh release upload "$TAG" domains_cleans.bin --clobber
+            gh release upload "$TAG" domains_cleans.bin $UF_ASSETS --clobber
           else
-            gh release create "$TAG" domains_cleans.bin \
+            gh release create "$TAG" domains_cleans.bin $UF_ASSETS \
               --target "$GITHUB_SHA" \
               --title "Blacklist $TAG" \
               --notes "Lista de dominios bloqueados, versión $TAG.
