@@ -1,12 +1,12 @@
 {
-  "version": 155,
-  "tag": "5dbc01119b985be01434287fcfeea2419d36c8a3d48d14ee9798f525bc0b59b9",
-  "domainCount": 349198,
-  "bitCount": 8367709,
+  "version": 156,
+  "tag": "207494375def916557d4566db921818804d8a80a9e58b9c6da96fbfe74b9b675",
+  "domainCount": 349661,
+  "bitCount": 8378803,
   "hashCount": 17,
   "murmurSeed": 0,
-  "url": "https://github.com/ticsmart/ciberescudo-blockeddomains/releases/download/v155/urlfilter_prefilter.bloom",
-  "signedHash": "AaakwznwQTGmAHxg5h3ApafelgrArU7b9gY4hCFLthgkjk1SRXju9VmQo2XXkYP3/3UeKq40FqtdgNaIqlySDA==",
-  "countsUrl": "https://github.com/ticsmart/ciberescudo-blockeddomains/releases/download/v155/urlfilter_prefilter.counts",
-  "countsSignedHash": "1N12Vw1VLRRzfxFaDQgn20me1jclEclY7vece+67SPcMXmrf0EBJTM66evCa5PBooV5/1W8pYM2P96b9vNbuDA=="
+  "url": "https://raw.githubusercontent.com/ticsmart/ciberescudo-blockeddomains/main/urlfilter_prefilter.bloom",
+  "signedHash": "pZFWP6B3KnuMy+PsevzpKsa9RC08692qY365N1u+kkiRy2sHxmzCR/kNkRnlS4aYUs0V3qbggl3nOLnadI9JAg==",
+  "countsUrl": "https://raw.githubusercontent.com/ticsmart/ciberescudo-blockeddomains/main/urlfilter_prefilter.counts",
+  "countsSignedHash": "BKd+ozC+xtTG0RAQ4fZsmitqpzpheIVeKWxFx+PZIh7fY9Cjs/adJ48pkFlE09Yzr3RjRc9kOJltTj0im21MDA=="
 }
