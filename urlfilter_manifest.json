@@ -5,8 +5,8 @@
   "bitCount": 8374370,
   "hashCount": 17,
   "murmurSeed": 0,
-  "url": "https://raw.githubusercontent.com/ticsmart/ciberescudo-blockeddomains/main/urlfilter_prefilter.bloom",
+  "url": "https://github.com/ticsmart/ciberescudo-blockeddomains/releases/download/v176/urlfilter_prefilter.bloom",
   "signedHash": "pkuN4kjqMpnam7A5IQExQIX6o5GohJbT2TrNULrz/oWjXXSEWj1RovtREsmKrwXDcoWX0CqzZqwXhsBbO1+rDA==",
-  "countsUrl": "https://raw.githubusercontent.com/ticsmart/ciberescudo-blockeddomains/main/urlfilter_prefilter.counts",
+  "countsUrl": "https://github.com/ticsmart/ciberescudo-blockeddomains/releases/download/v176/urlfilter_prefilter.counts",
   "countsSignedHash": "YmYnaLzOb4jNnKJFbjyxmu01cUgtaI8Dr+Bta16lQMm0uLTehsotucrya0KlctyYIkMBPF7dSjZ2BUzvaVD/CA=="
 }
